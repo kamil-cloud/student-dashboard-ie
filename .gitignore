@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# Screenshots may show real grades: keep them off GitHub
+docs/screenshots/
+# Supabase keys (also set in Vercel's environment variables)
+.env.local
+.env*.local
+.vercel

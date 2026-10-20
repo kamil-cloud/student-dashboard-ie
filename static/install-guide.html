@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Install Student Dashboard</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f4f2;
+        --card: #ffffff;
+        --text: #18181b;
+        --muted: #5f5f66;
+        --accent: #2f6fd0;
+        --border: rgba(0, 0, 0, 0.09);
+        --code: #ececea;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0e0f13;
+          --card: #17181c;
+          --text: #f4f4f3;
+          --muted: #a8a8a3;
+          --accent: #5da0ef;
+          --border: rgba(255, 255, 255, 0.08);
+          --code: #24252b;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+        padding: 40px 16px;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 30px;
+        letter-spacing: -0.02em;
+        margin: 0 0 6px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0 0 28px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+      }
+      h2 {
+        font-size: 17px;
+        margin: 0 0 10px;
+      }
+      ol,
+      ul {
+        margin: 0;
+        padding-left: 22px;
+      }
+      li {
+        margin: 6px 0;
+      }
+      code,
+      kbd {
+        background: var(--code);
+        border-radius: 6px;
+        padding: 1px 6px;
+        font: 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      strong {
+        font-weight: 650;
+      }
+      .download {
+        display: inline-block;
+        margin: 4px 0 12px;
+        padding: 10px 18px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .online-only {
+        display: none;
+      }
+      .is-online .online-only {
+        display: block;
+      }
+      .is-online li.online-only {
+        display: list-item;
+      }
+      .is-online .offline-only {
+        display: none;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+        margin-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Served from the website (not opened from the zip): show the download step.
+      if (/^https?:$/.test(location.protocol)) document.body.classList.add('is-online');
+    </script>
+    <main>
+      <p class="note online-only"><a href="./" style="color: var(--accent)">← Back to Student Dashboard</a></p>
+      <h1>Student Dashboard</h1>
+      <p class="lead">Your courses, deadlines, classes, grades and GPA in one place — filled in from your transcript and Blackboard. Everything stays in your browser.</p>
+
+      <section>
+        <h2>1 · Install the extension (2 minutes)</h2>
+        <p class="note">Works on a computer in Google Chrome, Microsoft Edge, Brave, Arc and other Chromium browsers. Not in Safari or Firefox, and not on phones.</p>
+        <a class="download online-only" href="Student-Dashboard.zip" download>Download the extension (.zip)</a>
+        <ol>
+          <li class="online-only">Open the downloaded <strong>Student-Dashboard.zip</strong> to unzip it (double-click on a Mac, right-click → Extract All on Windows). You get a folder named <strong>Student Dashboard</strong>: move it somewhere permanent, e.g. Documents — the browser loads it from there.</li>
+          <li class="offline-only">Unzip the file you received. You get a folder named <strong>Student Dashboard</strong> (keep it somewhere permanent, e.g. in Documents — the browser loads it from there).</li>
+          <li>Open <code>chrome://extensions</code> in the address bar (Edge: <code>edge://extensions</code>, Brave: <code>brave://extensions</code>).</li>
+          <li>Turn on <strong>Developer mode</strong> (top right corner).</li>
+          <li>Click <strong>Load unpacked</strong> and choose the <strong>Student Dashboard</strong> folder.</li>
+          <li>The dashboard opens by itself. Pin it: click the puzzle icon in the toolbar, then the pin next to Student Dashboard.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>2 · Set it up (3 minutes)</h2>
+        <ol>
+          <li><strong>Transcript</strong> (IE): download your <em>Expediente Académico</em> PDF from the student portal and drop it in. It is read on your computer — never uploaded — and only courses and grades are kept.</li>
+          <li><strong>Blackboard</strong>: just be logged in to Blackboard in the same browser. The extension uses that session (it never asks for your password) and only reads: it never changes anything on Blackboard.</li>
+          <li>Tick your courses and let it read the syllabi for grade weights: a small window opens for about a minute and closes by itself.</li>
+        </ol>
+        <p class="note">After that it syncs by itself every few hours while your browser is open, and reminds you before deadlines.</p>
+      </section>
+
+      <section>
+        <h2>Good to know</h2>
+        <ul>
+          <li><strong>Privacy:</strong> no account, no server. Your grades never leave your browser.</li>
+          <li><strong>Backups:</strong> Settings → Backup &amp; data → Export backup. The weekly backup file option saves one to Downloads automatically. Removing the extension deletes its data, so export first.</li>
+          <li><strong>Phone:</strong> Settings → Connections → Export to calendar puts your deadlines and classes, with reminders, in your phone’s calendar.</li>
+          <li><strong>Updating:</strong> replace the folder with the new version, then click the reload ↻ icon on the extension card in <code>chrome://extensions</code>. Your data is kept.</li>
+          <li><strong>“Log in to Blackboard to sync”:</strong> your Blackboard session expired — open Blackboard, log in, then click Sync.</li>
+          <li>On Windows, Chrome may warn about “developer mode extensions” at startup: choose to keep it.</li>
+          <li class="online-only"><strong>No computer at hand?</strong> The website works without the extension too (transcript, deadlines, grades, calendar export) — only the Blackboard sync needs it.</li>
+        </ul>
+      </section>
+      <footer>Independent student project — not affiliated with or endorsed by any university.</footer>
+    </main>
+  </body>
+</html>
