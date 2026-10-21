@@ -39,18 +39,26 @@
 /* ---- setup wizard --------------------------------------------------------- */
 
 .wz {
-  min-height: 100vh;
+  /* The page itself never scrolls (body: overflow hidden): the wizard scrolls on short screens. */
+  height: 100%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 48px 20px;
   background:
     radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--accent-solid) 22%, transparent), transparent 70%),
     var(--bg);
 }
+.wz > :first-child {
+  margin-top: auto;
+}
+.wz > :last-child {
+  margin-bottom: auto;
+}
 .wz-card {
   width: min(640px, 100%);
+  flex-shrink: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 22px;
@@ -730,7 +738,9 @@ a.btn {
 @media (max-width: 640px) {
   .wz {
     padding: 20px 12px;
-    justify-content: flex-start;
+  }
+  .wz > :first-child {
+    margin-top: 0;
   }
   .wz-card {
     padding: 16px 18px 22px;
@@ -1327,5 +1337,44 @@ a.btn {
   }
   .logout-btn .nav-label {
     display: none;
+  }
+}
+
+.landing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.landing-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+.landing-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 640px) {
+  .landing-stats {
+    gap: 8px;
+  }
+  .landing-stat {
+    padding: 8px 10px;
+  }
+  .landing-stat-value {
+    font-size: 17px;
+    white-space: normal;
+  }
+  .landing-stat-value .small {
+    display: block;
   }
 }

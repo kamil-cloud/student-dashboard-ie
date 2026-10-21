@@ -56,7 +56,7 @@ copyIcons(WEB);
 write(path.join(WEB, 'manifest.webmanifest'), {
   name: 'Student Dashboard',
   short_name: 'Student',
-  description: 'Every Blackboard deadline, class and grade in one list, for IE University students.',
+  description: 'Your deadlines, classes, grades and GPA in one place, for IE University students.',
   start_url: '/app',
   scope: '/',
   display: 'standalone',

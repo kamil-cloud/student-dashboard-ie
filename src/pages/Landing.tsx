@@ -2,10 +2,16 @@
  * Public landing page (/): what it is, who it is for and one button to sign up, readable in a
  * few seconds. The preview uses invented example data.
  */
-import { ArrowRight, BellRing, CalendarClock, GraduationCap, Lock, LogOut, RefreshCw } from 'lucide-react';
+import { Award, ArrowRight, BellRing, CalendarClock, GraduationCap, Lock, LogOut } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { Button } from '../components/ui';
 import { goTo } from '../lib/paths';
+
+const STATS = [
+  { label: 'Due this week', value: '3' },
+  { label: 'GPA', value: '8.6', unit: '/ 10' },
+  { label: 'Next class', value: '10:00', unit: 'Finance' },
+];
 
 const PREVIEW = [
   { title: 'Marketing Management · Case study', course: 'Marketing', due: 'Today, 23:59', tone: 'soon' },
@@ -49,10 +55,10 @@ export function Landing({ signedIn, onLogout }: { signedIn: boolean; onLogout: (
       <main className="landing-main">
         <section className="landing-hero">
           <p className="landing-kicker">For IE University students</p>
-          <h1>Every Blackboard deadline in one list.</h1>
+          <h1>Your deadlines, classes and grades in one place.</h1>
           <p className="landing-sub">
-            Student Dashboard collects your assignments, exams and classes from Blackboard, reminds you before each one and tracks your grades — so you never miss a
-            submission.
+            Student Dashboard brings together your Blackboard assignments and exams, your class schedule, your grades and your GPA — calculated like IE does — and
+            reminds you before every deadline, so you never miss a submission.
           </p>
           <div className="landing-cta">
             {signedIn ? (
@@ -76,7 +82,18 @@ export function Landing({ signedIn, onLogout }: { signedIn: boolean; onLogout: (
           </div>
         </section>
 
-        <section className="landing-preview card" aria-label="Example of the deadline list (invented data)">
+        <section className="landing-preview card" aria-label="Example of a dashboard (invented data)">
+          <div className="landing-stats">
+            {STATS.map((t) => (
+              <div key={t.label} className="landing-stat">
+                <span className="muted small">{t.label}</span>
+                <span className="landing-stat-value">
+                  {t.value}
+                  {t.unit && <span className="muted small"> {t.unit}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
           <div className="landing-preview-head">
             <span>Your deadlines</span>
             <span className="muted small">4 to do</span>
@@ -96,18 +113,18 @@ export function Landing({ signedIn, onLogout }: { signedIn: boolean; onLogout: (
         <section className="landing-points">
           <div>
             <CalendarClock size={20} />
-            <h2>All in one place</h2>
+            <h2>Deadlines and classes</h2>
             <p>Add a deadline in two seconds, or import every course, class and deadline from Blackboard in one click.</p>
           </div>
           <div>
-            <BellRing size={20} />
-            <h2>Reminded in time</h2>
-            <p>A reminder before each deadline, and a calendar you can add to your phone.</p>
+            <Award size={20} />
+            <h2>Grades and GPA</h2>
+            <p>Import your transcript: your GPA calculated like IE does, and the grade you need on the rest of each course.</p>
           </div>
           <div>
-            <RefreshCw size={20} />
-            <h2>On every device</h2>
-            <p>Log in from your laptop or phone: your dashboard is the same everywhere.</p>
+            <BellRing size={20} />
+            <h2>Reminders, on every device</h2>
+            <p>A reminder before each deadline, and the same dashboard on your laptop and your phone.</p>
           </div>
         </section>
       </main>

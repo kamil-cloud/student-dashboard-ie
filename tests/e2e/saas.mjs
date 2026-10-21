@@ -112,6 +112,20 @@ async function run(engine, site, db) {
         assert.ok(await page.getByTestId('logout').isVisible(), `logout visible on ${nav}`);
       }
     });
+    await step('the optional setup (Import from Blackboard) scrolls on a short laptop screen', page, async () => {
+      await page.setViewportSize({ width: 1366, height: 600 });
+      await page.goto(`${site.url}/app#/setup`);
+      await page.getByTestId('welcome').waitFor();
+      const start = page.getByTestId('wz-start');
+      await page.mouse.move(683, 300);
+      for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 400);
+      await page.waitForTimeout(300);
+      const box = await start.boundingBox();
+      assert.ok(box && box.y >= 0 && box.y + box.height <= 600, `"Get started" can be scrolled to (y=${box?.y})`);
+      await page.setViewportSize({ width: 1366, height: 860 });
+      await page.goto(`${site.url}/app#/`);
+      await page.getByTestId('core-input').waitFor();
+    });
     await step('reloading /app keeps the student logged in, with the item', page, async () => {
       await page.reload();
       await page.getByTestId('core-item').filter({ hasText: TEXT }).waitFor();

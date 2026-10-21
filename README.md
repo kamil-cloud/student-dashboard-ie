@@ -1,7 +1,7 @@
 # Student Dashboard
 
-**Student Dashboard helps IE University students see every Blackboard deadline in one list so they
-never miss a submission.**
+**Student Dashboard helps IE University students see deadlines, classes and grades in one place so
+they never miss a submission.**
 
 A web app (React + Vite, hosted on Vercel) with accounts and a database (Supabase). Built for the
 EdTech Challenge at IE University; the grading contract is in [CLAUDE.md](CLAUDE.md).

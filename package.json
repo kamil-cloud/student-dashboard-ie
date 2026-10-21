@@ -1,7 +1,7 @@
 {
   "name": "student-dashboard-web",
   "version": "1.0.0",
-  "description": "For IE University students: every Blackboard deadline, class and grade in one list, with reminders. Accounts and data in Supabase.",
+  "description": "For IE University students: deadlines, classes, grades and GPA in one place, with reminders. Accounts and data in Supabase.",
   "private": true,
   "type": "module",
   "license": "UNLICENSED",

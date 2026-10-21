@@ -41,8 +41,9 @@ keep RLS strict, the EU region, and the in-app "Delete my account".
 
 ## State of the project (2026-10-20)
 - Rebuilt for the EdTech Challenge (professor's brief, Oct 8 2026): a SaaS on Vercel + Supabase.
-  One-liner: "Student Dashboard helps IE University students see every Blackboard deadline in one
-  list so they never miss a submission." Main feature: add a deadline (title; due date optional).
+  One-liner (the user wants more than deadlines): "Student Dashboard helps IE University students
+  see deadlines, classes and grades in one place so they never miss a submission." Main feature:
+  add a deadline (title; due date optional).
   Data: private (each user only sees their own).
 - Website: `/` landing, `/signup`, `/login`, `/app` (the dashboard; its screens use `#/…`).
   Data = one `dashboards` row per user (JSON + revision for cross-device safety) and `backups`
