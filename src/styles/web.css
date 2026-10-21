@@ -1553,3 +1553,152 @@ a.btn {
 .page-logout + .load-screen {
   padding-top: 60px;
 }
+
+/* ---- /app: "Set up your dashboard" (website, until done or postponed) --------------------- */
+
+.setup-card {
+  margin-bottom: 16px;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent-soft) 70%, var(--surface)) 0%, var(--surface) 60%);
+}
+.setup-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.setup-head-text {
+  flex: 1;
+  min-width: 0;
+}
+.setup-head h2 {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin: 2px 0;
+}
+.setup-kicker {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.setup-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent-track);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.setup-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-solid);
+  transition: width 0.4s ease;
+}
+.setup-step.is-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+}
+.setup-step.is-done .setup-text strong {
+  color: var(--text-2);
+}
+.setup-next {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent-solid);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 4px;
+}
+.setup-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.setup-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.setup-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.setup-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.setup-step.is-optional {
+  background: transparent;
+  border-style: dashed;
+}
+.setup-num {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent-solid);
+}
+.setup-step.is-optional .setup-num {
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+.setup-step.is-done .setup-num {
+  background: var(--success-solid);
+  color: #fff;
+}
+.setup-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setup-text strong {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.setup-text strong svg {
+  color: var(--accent);
+}
+.setup-ok {
+  color: var(--success-text);
+  font-weight: 650;
+}
+.setup-step .btn {
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .setup-step {
+    flex-wrap: wrap;
+  }
+  .setup-text {
+    flex-basis: calc(100% - 40px);
+  }
+  .setup-step > .btn,
+  .setup-choice {
+    margin-left: 36px;
+  }
+}

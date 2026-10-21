@@ -61,6 +61,10 @@ keep RLS strict, the EU region, and the in-app "Delete my account".
   it; src/integrations/blackboard/calendarFeed.ts merges it). The bookmark is folded under
   "Also import your grades, professors and rooms (advanced)". Not yet tried with a real IE link:
   the fake feed (tests/fixtures/fake-blackboard.mjs) mirrors IE's calendar titles.
+- After sign-up, /app shows a "Start here · step 1 of 3" setup card (src/components/SetupCard.tsx):
+  university (asked, never assumed), IE transcript, Blackboard calendar link, then optionally the
+  bookmark. It must stay non-blocking (contract: no mandatory onboarding; no pop-up on load; the
+  bot types in core-input right away); "I'll do it later" hides it.
 - The user does NOT want a browser extension in the flow ("ça complique"). Blackboard sync on any
   browser can also go through the "Sync Student Dashboard" bookmarklet (src/integrations/blackboard/relay.ts
   + src/platform/relay.ts): GET-only proxy for /learn/api/public/ in the student's Blackboard tab,

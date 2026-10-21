@@ -77,6 +77,7 @@ export function Welcome({ startAt = 'welcome' }: { startAt?: 'welcome' | 'blackb
     setPicked(true);
     update((d) => {
       Object.assign(d.settings, universityPreset(u));
+      d.profile.universityChosen = true;
     });
   };
 

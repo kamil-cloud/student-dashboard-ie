@@ -188,6 +188,8 @@ export interface Profile {
   program: string;
   /** Set once the welcome setup has been completed or skipped. */
   onboardedAt: string | null;
+  /** The student told us their university (the default preset is generic). */
+  universityChosen: boolean;
 }
 
 export interface BlackboardConnection {

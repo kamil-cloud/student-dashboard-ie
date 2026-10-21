@@ -70,12 +70,15 @@ export function BlackboardConnect({
   onSkip,
   skipLabel = 'Skip for now',
   inWizard = false,
+  bookmarkOnly = false,
 }: {
   onDone: (summary: BbApplySummary | null) => void;
   onSkip?: () => void;
   skipLabel?: string;
   /** Part of the setup wizard (a hand-over to the extension resumes it there). */
   inWizard?: boolean;
+  /** Website: only the bookmark (the calendar link is set up elsewhere). */
+  bookmarkOnly?: boolean;
 }) {
   const { data, getData, update } = useStore();
   const { applyFetched } = useSync();
@@ -100,7 +103,7 @@ export function BlackboardConnect({
   const hostInputRef = useRef(hostInput);
   hostInputRef.current = hostInput;
   /** Website: the calendar link comes first; the bookmark (grades too) is folded away. */
-  const website = !IS_EXTENSION;
+  const website = !IS_EXTENSION && !bookmarkOnly;
   const [advanced, setAdvanced] = useState(() => !website || !!data.blackboard.host);
   useEffect(() => {
     if (phase.name !== 'start' && phase.name !== 'calendar-done') setAdvanced(true);

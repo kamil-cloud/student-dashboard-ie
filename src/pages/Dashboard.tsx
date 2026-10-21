@@ -4,13 +4,11 @@ import {
   BookOpen,
   CalendarClock,
   CalendarDays,
-  CheckCircle2,
   Circle,
   ClipboardCheck,
   GraduationCap,
   MapPin,
   Plus,
-  Sparkles,
   Target,
   TrendingUp,
   UserCheck,
@@ -21,6 +19,7 @@ import { CourseTag, courseColor, StatusPill } from '../components/common';
 import { useEditors } from '../components/editors';
 import { ItemRow } from '../components/ItemRow';
 import { DeadlineList, QuickAdd } from '../components/QuickAdd';
+import { SetupCard } from '../components/SetupCard';
 import { overallAttendance } from '../lib/attendance';
 import { diffDays, formatDate, greeting, relativeDay, todayStr } from '../lib/dates';
 import { averageGrade, computeGpa, courseGrade, formatGpa, formatGrade, GPA_MAX, requiredForTarget } from '../lib/grades';
@@ -29,53 +28,6 @@ import { navigate } from '../lib/router';
 import { classesOn, currentSemester, dueMoment, isOverdue, isTask, occurrenceMinutes, semesterProgress, sortByDue, upcoming, weekDates } from '../lib/schedule';
 import { useStore } from '../lib/store';
 import { IS_EXTENSION } from '../platform/env';
-
-function Onboarding() {
-  const { data } = useStore();
-  const { openCourse, openItem } = useEditors();
-  const steps = [
-    {
-      done: !!data.blackboard.lastSync,
-      title: 'Import from Blackboard',
-      text: 'Courses, classes and deadlines in one click — plus your transcript for grades.',
-      action: () => navigate(data.profile.onboardedAt ? { name: 'settings' } : { name: 'setup' }),
-      cta: 'Import',
-    },
-    { done: data.courses.length > 0, title: 'Add your courses', text: 'Name, professor, credits, schedule and room.', action: () => openCourse(), cta: 'Add course' },
-    { done: data.items.some((i) => i.dueDate), title: 'Add deadlines', text: 'Assignments, exams, projects and personal tasks.', action: () => openItem(), cta: 'Add deadline' },
-    { done: data.items.some((i) => i.score !== null), title: 'Enter grades', text: 'Your GPA and required grades update automatically.', action: () => (data.courses[0] ? navigate({ name: 'course', id: data.courses[0].id }) : openCourse()), cta: 'Enter grades' },
-  ];
-  if (steps.every((s) => s.done)) return null;
-  return (
-    <section className="card onboarding" data-testid="onboarding">
-      <div className="onboarding-head">
-        <div className="onboarding-icon">
-          <Sparkles size={20} />
-        </div>
-        <div>
-          <h2>Welcome to Student Dashboard</h2>
-          <p>A few quick steps to get your semester organised. Everything is saved to your account.</p>
-        </div>
-      </div>
-      <ol className="steps">
-        {steps.map((s, i) => (
-          <li key={s.title} className={`step ${s.done ? 'is-done' : ''}`}>
-            <span className="step-num">{s.done ? <CheckCircle2 size={18} /> : i + 1}</span>
-            <span className="step-text">
-              <span className="step-title">{s.title}</span>
-              <span className="step-desc">{s.text}</span>
-            </span>
-            {!s.done && (
-              <Button variant={i === steps.findIndex((x) => !x.done) ? 'primary' : 'secondary'} size="sm" onClick={s.action}>
-                {s.cta}
-              </Button>
-            )}
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 export function Dashboard() {
   const { data } = useStore();
@@ -127,8 +79,6 @@ export function Dashboard() {
   const estHours = dueThisWeek.reduce((s, i) => s + (i.estimatedHours ?? 0), 0);
   const examsThisWeek = dueThisWeek.filter((i) => i.kind === 'exam').length;
 
-  const isEmpty = data.courses.length === 0 && data.items.length === 0;
-
   return (
     <div className="page">
       <PageHeader
@@ -141,10 +91,9 @@ export function Dashboard() {
         }
       />
 
+      {!IS_EXTENSION && <SetupCard />}
       <QuickAdd />
       <DeadlineList />
-
-      {isEmpty || data.courses.length === 0 || !data.items.some((i) => i.score !== null) ? <Onboarding /> : null}
 
       <section className="card semester-card" data-testid="semester-card">
         <div className="semester-main">

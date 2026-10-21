@@ -60,7 +60,7 @@ export function universityPreset(university: University): Partial<Settings> {
   return { university };
 }
 
-export const DEFAULT_PROFILE: Profile = { firstName: '', program: '', onboardedAt: null };
+export const DEFAULT_PROFILE: Profile = { firstName: '', program: '', onboardedAt: null, universityChosen: false };
 
 export const DEFAULT_BLACKBOARD: BlackboardConnection = {
   host: null,

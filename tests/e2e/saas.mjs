@@ -98,6 +98,8 @@ async function run(engine, site, db) {
       await page.waitForURL(/\/app(#.*)?$/);
       await page.getByTestId('core-input').waitFor();
       assert.equal(await page.getByTestId('welcome').count(), 0, 'no mandatory onboarding');
+      assert.equal(await page.locator('[role="dialog"]').count(), 0, 'no pop-up in the way');
+      assert.ok(await page.getByTestId('setup-card').isVisible(), 'the setup steps are offered, not imposed');
     });
 
     // 3. Type a short text in the main feature, save, and see it in the list.
@@ -217,6 +219,13 @@ async function run(engine, site, db) {
       await page.waitForTimeout(500);
       assert.equal(await page.getByTestId('core-item').count(), 0);
       assert.ok(!(await page.content()).includes(TEXT));
+    });
+    await step('the setup asks for the university; another university skips the IE transcript', page, async () => {
+      assert.match(await page.getByTestId('setup-step-university').innerText(), /Next step/);
+      await page.getByTestId('setup-uni-other').click();
+      await page.getByTestId('setup-step-university').filter({ hasText: 'Another university' }).waitFor();
+      assert.equal(await page.getByTestId('setup-step-transcript').count(), 0);
+      assert.match(await page.getByTestId('setup-step-calendar').innerText(), /Next step/);
     });
     await step('signing up again with the same email is refused clearly', page, async () => {
       await page.getByTestId('logout').click();

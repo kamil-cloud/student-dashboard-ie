@@ -97,6 +97,7 @@ function sanitizeProfile(raw: unknown): Profile {
     firstName: str(p.firstName, '', 60).trim(),
     program: str(p.program, '', 40).trim(),
     onboardedAt: iso(p.onboardedAt),
+    universityChosen: p.universityChosen === true,
   };
 }
 

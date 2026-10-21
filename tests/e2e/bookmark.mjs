@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 // PW_CORE / WEBKIT_PATH: use another Playwright and WebKit build (WebKit builds need a recent macOS).
 const { chromium, firefox, webkit } = await import(process.env.PW_CORE || 'playwright-core');
 import { startFakeBlackboard, startStatic, startTestSupabase } from './servers.mjs';
+import { makeIeTranscriptPdf } from '../fixtures/ie-transcript.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const WEB = path.join(ROOT, 'dist', 'web');
@@ -92,6 +93,50 @@ async function run(engine) {
   };
 
   try {
+    await step('right after sign-up, /app offers the transcript, the calendar link and the bookmark', async () => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      page = await ctx.newPage();
+      account = `setup-${engine}-${Date.now()}@example.com`;
+      await page.goto(`${site.url}/signup`);
+      await page.getByTestId('signup-email').fill(account);
+      await page.getByTestId('signup-password').fill('Test-password-1');
+      await page.getByTestId('signup-submit').click();
+      await page.getByTestId('setup-card').waitFor();
+      assert.ok(await page.getByTestId('core-input').isVisible(), 'the main feature is usable right away');
+      assert.equal(await page.locator('[role="dialog"]').count(), 0, 'nothing pops up by itself');
+      await page.screenshot({ path: path.join(WORK, `${engine}-setup-card.png`) });
+      // The university comes first (no default guessed for the student).
+      assert.match(await page.getByTestId('setup-step-university').innerText(), /Next step/);
+      await page.getByTestId('setup-uni-ie').click();
+      await page.getByTestId('setup-step-university').filter({ hasText: 'IE University' }).waitFor();
+      assert.match(await page.getByTestId('setup-step-transcript').innerText(), /Next step/);
+      // 1. Calendar link
+      await page.getByTestId('setup-calendar').click();
+      await page.getByTestId('cal-url').fill(`${fake.host}${fake.bb.feedPath}`);
+      await page.getByTestId('cal-submit').click();
+      await toast(page, 'Blackboard calendar connected').waitFor({ timeout: 15000 });
+      await page.getByTestId('setup-step-calendar').filter({ hasText: 'Done' }).waitFor();
+      await page.getByTestId('core-item').filter({ hasText: 'Problem set 1' }).waitFor();
+      // 2. Transcript
+      const pdf = path.join(WORK, 'transcript.pdf');
+      fs.writeFileSync(pdf, await makeIeTranscriptPdf());
+      await page.getByTestId('setup-transcript').click();
+      await page.getByTestId('transcript-file').setInputFiles(pdf);
+      await page.getByTestId('transcript-preview').waitFor({ timeout: 20000 });
+      await page.getByTestId('transcript-import').click();
+      await page.getByTestId('setup-step-transcript').filter({ hasText: 'Done' }).waitFor({ timeout: 10000 });
+      await eventually(async () => (await readData())?.courses.some((c) => c.sources.transcript), 'transcript saved in the account');
+      assert.equal((await readData()).settings.university, 'ie', 'IE grading, as chosen');
+      // 3. The bookmark, for those who want more: straight to it, no calendar step again.
+      await page.getByTestId('setup-bookmark').click();
+      await page.getByTestId('bb-bookmark').waitFor();
+      assert.equal(await page.getByTestId('cal-connect').count(), 0);
+      await page.getByRole('button', { name: 'Cancel' }).click();
+      await page.getByTestId('setup-done').click();
+      await page.getByTestId('setup-card').waitFor({ state: 'detached' });
+      await ctx.close();
+    });
+
     await step('calendar link: pasted once, deadlines and classes appear and stay up to date', async () => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 760 } });
       page = await ctx.newPage();

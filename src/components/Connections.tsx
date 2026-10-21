@@ -203,7 +203,12 @@ export function ConnectionsCard() {
         <select
           className="input select setting-select"
           value={data.settings.university}
-          onChange={(e) => update((d) => void Object.assign(d.settings, universityPreset(e.target.value as University)))}
+          onChange={(e) =>
+            update((d) => {
+              Object.assign(d.settings, universityPreset(e.target.value as University));
+              d.profile.universityChosen = true;
+            })
+          }
           aria-label="University"
         >
           <option value="ie">IE University</option>
