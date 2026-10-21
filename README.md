@@ -8,10 +8,12 @@ EdTech Challenge at IE University; the grading contract is in [CLAUDE.md](CLAUDE
 
 - **Add a deadline** in two seconds on `/app` (title, optional due date): it is saved to your
   account and listed with all your other deadlines, on every device you log in from.
-- **Blackboard sync** (IE preset; any Blackboard Learn site): courses, professors, class sessions
-  with rooms, deadlines, exams and published grades, with the student's own Blackboard session,
-  read-only, through the "Sync Student Dashboard" bookmark clicked on Blackboard (any browser,
-  phones included).
+- **Blackboard calendar link** (the easiest way): in Blackboard, Calendar › Calendar settings ›
+  Share calendar, copy the link and paste it once. Every course's deadlines and class sessions
+  come in and stay up to date (re-read on opening and on "Sync now"), on any device.
+- **Blackboard sync with the bookmark** (advanced; IE preset, any Blackboard Learn site): also
+  professors, rooms and published grades, with the student's own Blackboard session, read-only,
+  through the "Sync Student Dashboard" bookmark clicked on Blackboard.
 - **Transcript import** (IE "Expediente Académico" PDF): every course, grade, ECTS, Matrícula de
   Honor, pass/fail and exchange semester; the GPA is computed like IE's. The PDF is read in the
   browser and never uploaded; identity details are never extracted.
@@ -36,6 +38,9 @@ EdTech Challenge at IE University; the grading contract is in [CLAUDE.md](CLAUDE
   Each student reads and writes only their own rows (`auth.uid() = user_id`); logged-out visitors
   have no access at all. Nothing personal is kept in the browser (only the login session).
 - Settings → "Delete my account" erases the account and everything saved with it.
+- `api/calendar.js` (a Vercel function) reads the Blackboard calendar link for the browser, which
+  cannot read another site's file itself: signed-in students only (Supabase session checked),
+  https `.ics` addresses only, no private network addresses, 5 MB / 10 s at most, nothing stored.
 - Only the Supabase URL and the publishable key reach the browser (`.env.local`, Vercel env vars).
   The secret key is never used by this app.
 
@@ -54,6 +59,16 @@ EdTech Challenge at IE University; the grading contract is in [CLAUDE.md](CLAUDE
    `https://<project>.vercel.app` (add it to Redirect URLs too).
 
 Every push to GitHub then updates the site.
+
+## How the Blackboard calendar link works
+
+The link (`https://<blackboard>/webapps/calendar/calendarFeed/<private id>/learn.ics`) is an
+iCalendar feed of all the student's courses, one year back and ahead. `src/integrations/blackboard/calendarFeed.ts`
+turns it into data: IE's sessions ("MANAGEMENT CONTROL (Ses. 3) Live in-person") become that
+course's class sessions (course created if needed, read like the bookmark reads them: room, mode,
+topic), short events and events named like deadlines become tasks from today on. Dates the
+student changed are kept, and when the bookmark is used too, Blackboard's own records win and
+nothing is duplicated. The link is saved in the student's dashboard row (RLS).
 
 ## How the Blackboard bookmark works
 

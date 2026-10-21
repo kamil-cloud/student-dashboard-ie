@@ -317,12 +317,15 @@ export function applySnapshot(data: AppData, snap: BbSnapshot, now = new Date())
         const s = d.semesters.find((x) => x.id === c.semesterId);
         return !!ay && !!s?.extKey?.startsWith(`${ay}-`);
       };
+      // A course made from the calendar link (no semester yet) is this one too.
+      const fromCalendarLink = (c: Draft<Course>) => c.semesterId === null && c.sessions.length > 0 && c.sessions.every((s) => s.extId?.startsWith('bbcal:'));
       let course: Draft<Course> | undefined = d.courses.find((c) => c.sources.blackboard?.id === bbId);
       if (!course) {
-        const candidates = d.courses.filter((c) => !c.sources.blackboard && sameYear(c)).map((c) => ({ c, score: nameSimilarity(c.name, name) }));
+        const candidates = d.courses.filter((c) => !c.sources.blackboard && (sameYear(c) || fromCalendarLink(c))).map((c) => ({ c, score: nameSimilarity(c.name, name) }));
         candidates.sort((a, b) => b.score - a.score);
         if (candidates[0] && candidates[0].score >= 0.6) {
           course = candidates[0].c;
+          course.semesterId ??= sem.id;
           summary.coursesLinked += 1;
         }
       }
@@ -366,7 +369,8 @@ export function applySnapshot(data: AppData, snap: BbSnapshot, now = new Date())
       // ---- class sessions: replace imported ones inside the range read --------
       if (snap.calendarComplete) {
         const fresh = toSessions(sessions);
-        const keep = course.sessions.filter((s) => !s.extId?.startsWith('bb:') || s.date < rangeStart || s.date > rangeEnd);
+        // (The calendar link's copies of these sessions go too: Blackboard's own are richer.)
+        const keep = course.sessions.filter((s) => s.extId?.startsWith('bbcal:') ? !fresh.length : !s.extId?.startsWith('bb:') || s.date < rangeStart || s.date > rangeEnd);
         const before = JSON.stringify(course.sessions);
         course.sessions = [...keep, ...fresh].sort((a, b) => a.date.localeCompare(b.date) || (a.start ?? '').localeCompare(b.start ?? '')) as Draft<ClassSession>[];
         if (JSON.stringify(course.sessions) !== before) course.updatedAt = nowIso;

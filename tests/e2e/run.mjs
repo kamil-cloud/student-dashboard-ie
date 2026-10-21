@@ -387,6 +387,7 @@ try {
     await web.getByTestId('wz-uni-ie').click();
     await web.getByTestId('wz-next').click();
     await web.getByRole('button', { name: 'Skip for now' }).click();
+    await web.getByTestId('bb-advanced').click();
     await web.getByTestId('bb-host').fill(fake.host);
     await web.getByTestId('bb-start').click();
     // The browser was restarted: the Blackboard session cookie is gone, like in real life.
@@ -430,6 +431,7 @@ try {
     await p.getByTestId('wz-start').click();
     await p.getByTestId('wz-uni-other').click();
     await p.getByTestId('wz-next').click();
+    await p.getByTestId('bb-advanced').click();
     await p.getByTestId('bb-bookmark').waitFor();
     const href = await p.getByTestId('bm-link').getAttribute('href');
     assert(href?.startsWith('javascript:') && decodeURIComponent(href).includes(JSON.stringify(site.url)), 'bookmark made for this website');

@@ -2,6 +2,7 @@
  * Defensive parsing of stored / imported data. Anything malformed is repaired or
  * dropped (and reported) instead of crashing the app.
  */
+import { normalizeFeedUrl } from '../integrations/blackboard/calendarFeed';
 import { isValidDateStr } from './dates';
 import { DEFAULT_BLACKBOARD, DEFAULT_SETTINGS, US_GPA_TABLE, uid } from './defaults';
 import { LIMITS } from './parse';
@@ -117,6 +118,8 @@ function sanitizeBlackboard(raw: unknown): BlackboardConnection {
     lastSync: iso(b.lastSync),
     excludedCourses: arr(b.excludedCourses).filter((x): x is string => typeof x === 'string' && x.length < 100).slice(0, 200),
     syllabus: typeof b.syllabus === 'boolean' ? b.syllabus : DEFAULT_BLACKBOARD.syllabus,
+    calendarUrl: typeof b.calendarUrl === 'string' ? normalizeFeedUrl(b.calendarUrl) : null,
+    calendarSync: iso(b.calendarSync),
   };
 }
 

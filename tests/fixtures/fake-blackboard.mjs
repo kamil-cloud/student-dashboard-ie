@@ -6,7 +6,9 @@
 //  - calendar: 400 for a `limit` parameter or a range over 16 weeks; sessions titled
 //    "<NAME>  (Ses. N) Live in-person " with "<topic>\n<INSTRUCTOR>. ICALUID:…" descriptions,
 //    Teams duplicates, asynchronous all-day slots, double sessions;
-//  - syllabus via an LTI hand-off (auto-submitting form → tool → /app that renders late).
+//  - syllabus via an LTI hand-off (auto-submitting form → tool → /app that renders late);
+//  - the calendar link (Calendar settings › Share calendar): an .ics feed of the same calendar
+//    plus every due date, at /webapps/calendar/calendarFeed/<token>/learn.ics, no login needed.
 // Used by unit tests (as a fetch transport) and by the end-to-end tests (as an HTTP server).
 
 const DAY = 86_400_000;
@@ -157,6 +159,27 @@ export function createFakeBlackboard({ now = new Date(), toolOrigin = 'http://12
     _107_1: { lang: 'en', professor: 'LAURA FICTICIA', sessions: 15, credits: '3', rows: [['Pitch presentation', '50%', '', ''], ['Final exam', '50%', '', '']] },
   };
 
+  // ---- calendar link (.ics) --------------------------------------------------------
+  const FEED_TOKEN = 'f00dfeedc0ffee42';
+  const feedPath = `/webapps/calendar/calendarFeed/${FEED_TOKEN}/learn.ics`;
+  const icsStamp = (iso) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const icsText = (t) => String(t ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  function feedIcs() {
+    const events = [
+      ...calendar.map((i) => ({ uid: `${i.id}@blackboard`, summary: i.title, description: i.description.replace(/<[^>]+>/g, ''), location: i.location, start: i.start, end: i.end })),
+      // Due dates of gradebook columns (those not already on the calendar above).
+      ...Object.values(columns)
+        .flat()
+        .filter((c) => c.grading.due && !calendar.some((i) => i.title === c.name))
+        .map((c) => ({ uid: `${c.id}-due@blackboard`, summary: c.name, description: '', location: '', start: c.grading.due, end: c.grading.due })),
+    ];
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Blackboard Inc.//Blackboard Learn//EN', 'X-PUBLISHED-TTL:PT4H'];
+    for (const e of events)
+      lines.push('BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${icsStamp(now.toISOString())}`, `DTSTART:${icsStamp(e.start)}`, `DTEND:${icsStamp(e.end)}`, `SUMMARY:${icsText(e.summary)}`, `DESCRIPTION:${icsText(e.description)}`, `LOCATION:${icsText(e.location)}`, 'END:VEVENT');
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n');
+  }
+
   // ---- routing ----------------------------------------------------------------------
   const json = (status, body) => ({ status, type: 'application/json', body: JSON.stringify(body) });
   const html = (status, body, headers = {}) => ({ status, type: 'text/html; charset=utf-8', body, headers });
@@ -174,6 +197,11 @@ export function createFakeBlackboard({ now = new Date(), toolOrigin = 'http://12
     const p = url.pathname;
     state.requests.push(`${method} ${p}${url.search}`);
     const authed = state.loggedIn && /bb_session=ok/.test(cookie ?? '');
+
+    // ---- calendar link: a private address, no login needed
+    if (p.startsWith('/webapps/calendar/calendarFeed/')) {
+      return p === feedPath ? { status: 200, type: 'text/calendar; charset=utf-8', body: feedIcs() } : html(404, 'Not found');
+    }
 
     // ---- pages
     if (p === '/' || p.startsWith('/ultra')) {
@@ -270,5 +298,11 @@ export function createFakeBlackboard({ now = new Date(), toolOrigin = 'http://12
     if (c) c.grading.due = at(days, 23, 59);
   };
 
-  return { state, handle, handleTool, transport, addGrade, moveDue, ay: ay.replace('-', '/'), courses, syllabi, now };
+  /** The local date `days` from now, as the app stores it. */
+  const dateIn = (days) => {
+    const d = new Date(at(days, 23, 59));
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  return { state, handle, handleTool, transport, addGrade, moveDue, feedPath, feedIcs, dateIn, ay: ay.replace('-', '/'), courses, syllabi, now };
 }

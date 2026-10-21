@@ -109,9 +109,11 @@ function SyncChip() {
   const { data } = useStore();
   const sync = useSync();
   const now = useNow(60_000);
-  if (!data.blackboard.host) return null;
-  const loggedOut = sync.lastError?.code === 'auth' || (sync.background?.state === 'logged-out' && Date.parse(sync.background.at) > Date.parse(data.blackboard.lastSync ?? ''));
-  const label = sync.running ? (sync.progress?.label ?? 'Syncing…') : loggedOut ? 'Log in to Blackboard to sync' : `Blackboard · ${timeAgo(data.blackboard.lastSync, now)}`;
+  const bb = data.blackboard;
+  if (!bb.host && !bb.calendarUrl) return null;
+  const loggedOut = sync.lastError?.code === 'auth' || (sync.background?.state === 'logged-out' && Date.parse(sync.background.at) > Date.parse(bb.lastSync ?? ''));
+  const last = [bb.lastSync, bb.calendarSync].filter((x): x is string => !!x).sort().pop() ?? null;
+  const label = sync.running ? (sync.progress?.label ?? 'Syncing…') : loggedOut ? 'Log in to Blackboard to sync' : `Blackboard · ${timeAgo(last, now)}`;
   return (
     <button className={`sync-chip ${loggedOut ? 'is-warn' : ''}`} onClick={() => void sync.syncNow()} disabled={sync.running} title="Sync with Blackboard now" data-testid="sync-chip">
       <RefreshCw size={14} className={sync.running ? 'spin' : ''} />

@@ -48,8 +48,16 @@ export async function startFakeBlackboard(opts = {}) {
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.zip': 'application/zip' };
 
 export async function startStatic(dir) {
-  const server = await listen((req, res) => {
+  const server = await listen(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    // The website's functions (api/), as Vercel runs them, with the test Supabase.
+    if (url.pathname === '/api/calendar') {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = `http://127.0.0.1:${TEST_SUPABASE_PORT}`;
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = TEST_SUPABASE_KEY;
+      process.env.SDW_ALLOW_LOCAL_FEEDS = '1';
+      const { default: handler } = await import('../../api/calendar.js');
+      return handler(req, res);
+    }
     let file = path.join(dir, decodeURIComponent(url.pathname));
     if (!file.startsWith(dir)) return send(res, { status: 403, type: 'text/plain', body: 'no' });
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');

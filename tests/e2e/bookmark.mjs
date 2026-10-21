@@ -1,6 +1,7 @@
-// End-to-end test of the website's Blackboard sync without the extension (the "Sync Student
-// Dashboard" bookmark), in the engines of Chrome, Safari (WebKit) and Firefox, against the fake
-// Blackboard, signed in to the fake Supabase project (the dashboard is saved in the database).
+// End-to-end test of the website's Blackboard connection without the extension — the calendar
+// link (pasted once) and the "Sync Student Dashboard" bookmark (grades too) — in the engines of
+// Chrome, Safari (WebKit) and Firefox, against the fake Blackboard, signed in to the fake
+// Supabase project (the dashboard is saved in the database).
 // A bookmark click is simulated by running the bookmark's code in the Blackboard tab.
 // Usage:  node scripts/build.mjs --test-hosts && node tests/e2e/bookmark.mjs
 // Env:    ENGINES=chromium,webkit,firefox   SDW_E2E_DIR=…   HEADED=1
@@ -91,6 +92,42 @@ async function run(engine) {
   };
 
   try {
+    await step('calendar link: pasted once, deadlines and classes appear and stay up to date', async () => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 760 } });
+      page = await ctx.newPage();
+      account = `calendar-${engine}-${Date.now()}@example.com`;
+      await signUpAndSetup(page, site.url, account);
+      await page.getByTestId('wz-start').click();
+      await page.getByTestId('wz-uni-ie').click();
+      await page.getByTestId('wz-next').click();
+      await page.getByRole('button', { name: 'Skip for now' }).click();
+      await page.getByTestId('cal-connect').waitFor();
+      // The bookmark is folded away until asked for.
+      assert.equal(await page.getByTestId('bb-bookmark').count(), 0, 'the bookmark is not shown first');
+      await page.screenshot({ path: path.join(WORK, `${engine}-0-calendar-step.png`) });
+      await page.getByTestId('cal-url').fill('https://blackboard.ie.edu/ultra/calendar');
+      await page.getByTestId('cal-submit').click();
+      await page.getByTestId('cal-error').waitFor();
+      await page.getByTestId('cal-url').fill(`${fake.host}${fake.bb.feedPath}`);
+      await page.getByTestId('cal-submit').click();
+      await page.getByTestId('cal-done').waitFor({ timeout: 15000 });
+      assert.match(await page.getByTestId('cal-done').innerText(), /new deadline/);
+      await page.getByTestId('cal-continue').click();
+      await page.getByTestId('wz-next').click();
+      await page.getByTestId('wz-finish').click();
+      await page.getByTestId('core-item').filter({ hasText: 'Problem set 1' }).waitFor();
+      let d;
+      await eventually(async () => (d = await readData())?.blackboard.calendarUrl, 'calendar link saved in the account');
+      assert(d.courses.some((c) => c.name === 'Management Control' && c.sessions.length >= 5), 'classes imported');
+      // "Sync now" re-reads the link (no bookmark needed); a moved deadline is picked up.
+      fake.bb.moveDue('_102_1', '_9102_1', 26);
+      await page.getByTestId('sync-chip').click();
+      await toast(page, 'Blackboard calendar').waitFor({ timeout: 15000 });
+      assert.equal(await page.getByTestId('bm-prompt').count(), 0, 'no bookmark prompt');
+      await eventually(async () => (await readData()).items.some((i) => i.title === 'Problem set 2' && i.dueDate === fake.bb.dateIn(26)), 'moved deadline saved');
+      await ctx.close();
+    });
+
     await step('first connection: bookmark, Blackboard tab, everything imported', async () => {
       page = await context.newPage();
       page.on('pageerror', (e) => errors.push(`dashboard: ${e.message}`));
@@ -99,6 +136,7 @@ async function run(engine) {
       await page.getByTestId('wz-start').click();
       await page.getByTestId('wz-uni-other').click();
       await page.getByTestId('wz-next').click();
+      await page.getByTestId('bb-advanced').click();
       await page.getByTestId('bb-bookmark').waitFor();
       await page.getByTestId('bb-host').fill(fake.host);
       code = await page.getByTestId('bm-link').getAttribute('href');
@@ -175,15 +213,20 @@ async function run(engine) {
       await other.close();
     });
 
-    await step('phone-sized screen: the bookmark steps fit', async () => {
+    await step('phone-sized screen: the calendar link and bookmark steps fit', async () => {
       const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: engine !== 'firefox', hasTouch: true, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
       const p = await phone.newPage();
       await signUpAndSetup(p, site.url, `phone-${engine}-${Date.now()}@example.com`);
       await p.getByTestId('wz-start').click();
       await p.getByTestId('wz-uni-other').click();
       await p.getByTestId('wz-next').click();
+      await p.getByTestId('cal-url').waitFor();
+      let overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      assert(overflow <= 1, `calendar step: ${overflow}px horizontal overflow`);
+      await p.screenshot({ path: path.join(WORK, `${engine}-phone-calendar.png`), fullPage: true });
+      await p.getByTestId('bb-advanced').click();
       await p.getByTestId('bm-copy').waitFor();
-      const overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert(overflow <= 1, `${overflow}px horizontal overflow`);
       await p.screenshot({ path: path.join(WORK, `${engine}-phone-bookmark.png`), fullPage: true });
       await phone.close();

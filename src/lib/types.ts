@@ -200,6 +200,13 @@ export interface BlackboardConnection {
   excludedCourses: string[];
   /** Import syllabus weights (IE only). */
   syllabus: boolean;
+  /**
+   * The student's Blackboard calendar link (Calendar settings › Share calendar): deadlines and
+   * class times, re-read whenever the dashboard opens. A private link: it stays in their account.
+   */
+  calendarUrl: string | null;
+  /** Last time the calendar link was read. */
+  calendarSync: string | null;
 }
 
 export interface AppData {

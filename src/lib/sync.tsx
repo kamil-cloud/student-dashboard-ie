@@ -1,15 +1,19 @@
 /**
  * Blackboard sync in the dashboard: "Sync now", applying what the extension's background
- * worker fetched while the dashboard was closed (the "inbox"), and — on the website without the
- * extension — syncing whenever the student clicks the bookmark on Blackboard.
+ * worker fetched while the dashboard was closed (the "inbox"), and — on the website — the
+ * Blackboard calendar link (re-read on opening and on "Sync now") and the bookmark (syncing
+ * whenever the student clicks it on Blackboard).
  */
+import { produce } from 'immer';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { applySnapshot, type BbApplySummary } from '../integrations/blackboard/apply';
+import { applyCalendarFeed, describeCalendar, type CalendarSummary } from '../integrations/blackboard/calendarFeed';
 import { BlackboardError } from '../integrations/blackboard/client';
 import type { BbSnapshot, SyncProgress } from '../integrations/blackboard/types';
 import { BookmarkPrompt } from '../components/SyncBookmark';
 import { detectBackend, readSnapshot } from '../platform/blackboard';
 import { currentRelay, onRelay, relayClaimed, takeSession, tellRelay, type Relay } from '../platform/relay';
+import { fetchCalendarFeed } from '../platform/calendarFeed';
 import { IS_EXTENSION } from '../platform/env';
 import { clearInbox, getBackgroundStatus, getInbox, type BackgroundStatus } from '../platform/meta';
 import { useToast } from '../components/feedback';
@@ -19,6 +23,8 @@ import { useStore } from './store';
 
 /** Website only: the extension cannot sync in the background for it, so it catches up on opening. */
 const WEB_SYNC_AFTER_MS = 60 * 60 * 1000;
+/** The calendar link is re-read on opening when it was last read longer ago than this. */
+const CALENDAR_SYNC_AFTER_MS = 2 * 60 * 60 * 1000;
 
 export interface SyncState {
   running: boolean;
@@ -33,6 +39,8 @@ interface SyncApi extends SyncState {
   syncNow: (opts?: { syllabus?: boolean; courseIds?: string[]; quiet?: boolean }) => Promise<BbApplySummary | null>;
   /** Apply a snapshot read elsewhere (e.g. by the setup wizard). */
   applyFetched: (snapshot: BbSnapshot) => BbApplySummary;
+  /** Read the Blackboard calendar link (`url`: connect a new one) and apply it. */
+  syncCalendar: (opts?: { url?: string; quiet?: boolean }) => Promise<CalendarSummary | null>;
 }
 
 const SyncContext = createContext<SyncApi | null>(null);
@@ -74,14 +82,56 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [getData, replaceData],
   );
 
+  const syncCalendar = useCallback<SyncApi['syncCalendar']>(
+    async (opts = {}) => {
+      const url = opts.url ?? getData().blackboard.calendarUrl;
+      if (!url || running.current) {
+        if (opts.url) throw new Error('A sync is already running. Try again in a moment.');
+        return null;
+      }
+      running.current = true;
+      setState((s) => ({ ...s, running: true, progress: { step: 'calendar', label: 'Reading your Blackboard calendar', done: 0, total: 1 }, lastError: null }));
+      try {
+        const events = await fetchCalendarFeed(url);
+        const { data: next, summary } = applyCalendarFeed(getData(), events);
+        replaceData(
+          produce(next, (d) => {
+            d.blackboard.calendarUrl = url;
+          }),
+        );
+        const text = describeCalendar(summary);
+        if (!opts.quiet && !opts.url) toast({ tone: 'success', message: text ? `Blackboard calendar: ${text}.` : 'Blackboard calendar — everything is up to date.', duration: 7000 });
+        if (opts.quiet && (summary.itemsAdded || summary.itemsUpdated)) toast({ tone: 'success', message: `From your Blackboard calendar: ${describeCalendar({ ...summary, sessions: 0, coursesAdded: 0 })}.`, duration: 8000 });
+        return summary;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setState((s) => ({ ...s, lastError: { message, code: 'calendar' } }));
+        if (opts.url) throw err;
+        if (!opts.quiet) toast({ tone: 'error', message: `Blackboard calendar: ${message}`, duration: 9000 });
+        return null;
+      } finally {
+        running.current = false;
+        setState((s) => ({ ...s, running: false, progress: null }));
+      }
+    },
+    [getData, replaceData, toast],
+  );
+
   const syncNow = useCallback<SyncApi['syncNow']>(
     async (opts = {}) => {
       const current = getData();
       const h = current.blackboard.host;
-      if (!h || running.current) return null;
+      const calendar = !IS_EXTENSION && !!current.blackboard.calendarUrl;
+      if (running.current) return null;
+      if (!h) {
+        if (calendar) await syncCalendar({ quiet: opts.quiet });
+        return null;
+      }
       const viaBookmark = !IS_EXTENSION && (await detectBackend()) === 'none';
       if (viaBookmark && currentRelay()?.origin !== h) {
-        setAskBookmark(true);
+        // With the calendar link, "Sync now" needs no bookmark (grades come with the next click).
+        if (calendar) await syncCalendar({ quiet: opts.quiet });
+        else setAskBookmark(true);
         return null;
       }
       running.current = true;
@@ -99,6 +149,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         });
         await api.createBackup('pre-sync');
         const summary = apply(snapshot);
+        // The calendar link may hold the same deadlines: let it drop its copies now.
+        if (calendar) window.setTimeout(() => void syncCalendar({ quiet: true }), 0);
         void clearInbox().catch(() => {});
         const text = describeSummary(summary);
         if (viaBookmark) tellRelay(`✓ Student Dashboard synced${text ? `: ${text}` : ' — everything is up to date'}. You can close this tab.`);
@@ -119,8 +171,22 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, running: false, progress: null }));
       }
     },
-    [apply, getData, toast],
+    [apply, getData, syncCalendar, toast],
   );
+
+  // Website: the calendar link is re-read on opening (and when the tab comes back after a while).
+  const calendarUrl = data.blackboard.calendarUrl;
+  useEffect(() => {
+    if (IS_EXTENSION || !calendarUrl) return;
+    const maybe = () => {
+      const last = Date.parse(getData().blackboard.calendarSync ?? '') || 0;
+      if (Date.now() - last > CALENDAR_SYNC_AFTER_MS) void syncCalendar({ quiet: true });
+    };
+    maybe();
+    const onVisible = () => document.visibilityState === 'visible' && maybe();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [calendarUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Apply what the background worker fetched (extension), at launch and whenever it finishes.
   const applyInbox = useCallback(async () => {
@@ -195,7 +261,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return onRelay(handle);
   }, [getData, syncNow, toast]);
 
-  const value = useMemo<SyncApi>(() => ({ ...state, syncNow, applyFetched: apply }), [state, syncNow, apply]);
+  const value = useMemo<SyncApi>(() => ({ ...state, syncNow, applyFetched: apply, syncCalendar }), [state, syncNow, apply, syncCalendar]);
   return (
     <SyncContext.Provider value={value}>
       {children}

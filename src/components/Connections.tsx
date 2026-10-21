@@ -169,6 +169,20 @@ export function ConnectionsCard() {
     input.click();
   };
 
+  const removeCalendar = async () => {
+    const ok = await confirm({
+      title: 'Remove the calendar link?',
+      message: 'Deadlines and classes stop updating from your Blackboard calendar. Everything already imported stays in your dashboard.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (ok)
+      update((d) => {
+        d.blackboard.calendarUrl = null;
+        d.blackboard.calendarSync = null;
+      });
+  };
+
   const disconnect = async () => {
     const ok = await confirm({
       title: 'Disconnect Blackboard?',
@@ -203,6 +217,26 @@ export function ConnectionsCard() {
             <Plug size={15} /> Blackboard
           </h3>
         </div>
+        {bb.calendarUrl && (
+          <div className="conn-block" data-testid="cal-status">
+            <div className="conn-status">
+              {sync.lastError?.code === 'calendar' ? <AlertTriangle size={16} className="text-warning" /> : <CheckCircle2 size={16} className="text-success" />}
+              <span>
+                <strong>Blackboard calendar link</strong>
+                <span className="muted small"> · deadlines and classes · last read {timeAgo(bb.calendarSync, now)}</span>
+              </span>
+            </div>
+            {sync.lastError?.code === 'calendar' && <p className="conn-warn small">{sync.lastError.message}</p>}
+            <div className="conn-actions">
+              <Button variant="primary" size="sm" icon={<RefreshCw size={14} className={sync.running ? 'spin' : ''} />} disabled={sync.running} onClick={() => void sync.syncCalendar()} data-testid="cal-sync">
+                {sync.running ? 'Reading…' : 'Update now'}
+              </Button>
+              <Button variant="ghost" size="sm" icon={<Link2Off size={14} />} onClick={() => void removeCalendar()} data-testid="cal-remove">
+                Remove link
+              </Button>
+            </div>
+          </div>
+        )}
         {host ? (
           <div className="conn-block" data-testid="bb-connected">
             <div className="conn-status">
@@ -253,10 +287,12 @@ export function ConnectionsCard() {
           </div>
         ) : (
           <div className="conn-block">
-            <p className="muted small">Import your courses, class sessions, deadlines and grades, and keep them up to date.</p>
+            <p className="muted small">
+              {bb.calendarUrl ? 'Your grades, professors and rooms can come from Blackboard too.' : 'Import your courses, class sessions, deadlines and grades, and keep them up to date.'}
+            </p>
             <div className="conn-actions">
-              <Button variant="primary" size="sm" icon={<Plug size={14} />} onClick={() => setConnectOpen(true)} data-testid="connect-bb">
-                Connect Blackboard
+              <Button variant={bb.calendarUrl ? 'secondary' : 'primary'} size="sm" icon={<Plug size={14} />} onClick={() => setConnectOpen(true)} data-testid="connect-bb">
+                {bb.calendarUrl ? 'Import grades too' : 'Connect Blackboard'}
               </Button>
             </div>
           </div>

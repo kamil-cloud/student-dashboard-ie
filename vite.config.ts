@@ -24,6 +24,19 @@ function webCsp(supabaseUrl: string): Plugin {
 
 // `vite build --mode web` → dist/web (installable website)
 // `vite build --mode extension` → dist/extension (pages of the browser extension)
+// `npm run dev`: serve the website's /api functions too (Vercel runs them in production).
+function devApi(): Plugin {
+  return {
+    name: 'dev-api',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/api/calendar', (req, res) => {
+        void import('./api/calendar.js').then((m) => m.default(req, res));
+      });
+    },
+  };
+}
+
 // Keys come from .env.local (or the host's environment variables) with the names the Next.js
 // convention uses, so the same two lines work everywhere: NEXT_PUBLIC_SUPABASE_URL and
 // NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
@@ -32,12 +45,14 @@ const ENV_PREFIX = ['VITE_', 'NEXT_PUBLIC_'];
 export default defineConfig(({ mode }) => {
   const extension = mode === 'extension';
   const env = { ...loadEnv(mode, process.cwd(), ENV_PREFIX), ...process.env };
+  // The dev server's /api functions read the same two public values.
+  for (const k of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']) process.env[k] ??= env[k];
   return {
     // The website has real pages (/, /signup, /login, /app): assets must load from the root.
     base: extension ? './' : '/',
     publicDir: false,
     envPrefix: ENV_PREFIX,
-    plugins: [react(), ...(extension ? [] : [webCsp(env.NEXT_PUBLIC_SUPABASE_URL ?? '')])],
+    plugins: [react(), ...(extension ? [] : [webCsp(env.NEXT_PUBLIC_SUPABASE_URL ?? ''), devApi()])],
     build: {
       outDir: extension ? 'dist/extension' : 'dist/web',
       emptyOutDir: true,

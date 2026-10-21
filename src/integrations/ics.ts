@@ -105,6 +105,9 @@ export interface IcsEvent {
   /** Local "HH:MM", or null for all-day events. */
   time: string | null;
   durationMin: number | null;
+  /** When it ends (local), if the event says so. */
+  endDate: string | null;
+  endTime: string | null;
 }
 
 const unescape = (s: string) => s.replace(/\\n/gi, '\n').replace(/\\([\\;,])/g, '$1');
@@ -146,6 +149,8 @@ export function parseIcs(text: string): IcsEvent[] {
           date: start.date,
           time: start.time,
           durationMin,
+          endDate: end?.date ?? null,
+          endTime: end?.time ?? null,
         });
       }
       cur = null;

@@ -68,6 +68,8 @@ export const DEFAULT_BLACKBOARD: BlackboardConnection = {
   lastSync: null,
   excludedCourses: [],
   syllabus: true,
+  calendarUrl: null,
+  calendarSync: null,
 };
 
 export function emptyData(): AppData {

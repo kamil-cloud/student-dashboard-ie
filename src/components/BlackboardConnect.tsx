@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Check, CheckCircle2, ExternalLink, Loader2, LogIn, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronDown, ExternalLink, Loader2, LogIn, ShieldCheck } from 'lucide-react';
+import { CalendarLinkConnect } from './CalendarLink';
 import { useConfirm } from './feedback';
 import { BookmarkSetup } from './SyncBookmark';
 import { Button } from './ui';
 import type { BbApplySummary } from '../integrations/blackboard/apply';
+import { describeCalendar, type CalendarSummary } from '../integrations/blackboard/calendarFeed';
 import { BlackboardError } from '../integrations/blackboard/client';
 import { cleanCourseName, parseTerm } from '../integrations/blackboard/parse';
 import { syllabusPlacement } from '../integrations/blackboard/syllabus';
@@ -36,6 +38,8 @@ type Phase =
   | { name: 'choose'; choices: BbCourseChoice[] }
   | { name: 'importing' }
   | { name: 'done'; summary: BbApplySummary }
+  /** Website: connected with the calendar link. */
+  | { name: 'calendar-done'; summary: CalendarSummary }
   | { name: 'error'; message: string };
 
 const STEPS: { key: SyncProgress['step']; label: string }[] = [
@@ -95,6 +99,13 @@ export function BlackboardConnect({
   const viaBookmark = backend === 'none';
   const hostInputRef = useRef(hostInput);
   hostInputRef.current = hostInput;
+  /** Website: the calendar link comes first; the bookmark (grades too) is folded away. */
+  const website = !IS_EXTENSION;
+  const [advanced, setAdvanced] = useState(() => !website || !!data.blackboard.host);
+  useEffect(() => {
+    if (phase.name !== 'start' && phase.name !== 'calendar-done') setAdvanced(true);
+  }, [phase.name]);
+  const startish = phase.name === 'start' || phase.name === 'error';
 
   useEffect(() => {
     void detectBackend().then(setBackend);
@@ -326,7 +337,16 @@ export function BlackboardConnect({
     );
   }
 
-  const reads = (
+  const reads = website ? (
+    <ul className="bb-reads">
+      <li>
+        <Check size={14} /> Everything from the calendar link, plus your published grades
+      </li>
+      <li>
+        <Check size={14} /> Your courses with professors, and class sessions with rooms
+      </li>
+    </ul>
+  ) : (
     <ul className="bb-reads">
       <li>
         <Check size={14} /> Your courses, professors and class sessions (with rooms)
@@ -344,7 +364,30 @@ export function BlackboardConnect({
 
   return (
     <div className="bb-connect" data-testid="bb-connect">
-      {viaBookmark && (phase.name === 'start' || phase.name === 'error') && (
+      {website && startish && (
+        <>
+          {data.blackboard.calendarUrl ? (
+            <div className="bb-panel is-success" data-testid="cal-connected">
+              <CheckCircle2 size={22} />
+              <div>
+                <strong>Your Blackboard calendar is connected</strong>
+                <p className="muted small">Deadlines and class times update by themselves. Below, you can also import your grades.</p>
+              </div>
+            </div>
+          ) : (
+            <CalendarLinkConnect onConnected={(summary) => setPhase({ name: 'calendar-done', summary })} />
+          )}
+          <button type="button" className="bb-advanced-toggle" onClick={() => setAdvanced((v) => !v)} aria-expanded={advanced} data-testid="bb-advanced">
+            <ChevronDown size={16} className={advanced ? 'is-open' : ''} />
+            <span>
+              <strong>Also import your grades, professors and rooms</strong>
+              <span className="muted small"> — advanced, with a bookmark in your browser</span>
+            </span>
+          </button>
+        </>
+      )}
+
+      {viaBookmark && startish && advanced && (
         <div className="bm-connect" data-testid="bb-bookmark">
           {!isIe && (
             <label className="field">
@@ -398,7 +441,7 @@ export function BlackboardConnect({
               <AlertCircle size={15} /> {phase.message}
             </p>
           )}
-          {onSkip && (
+          {onSkip && !website && (
             <div className="tx-actions">
               <Button variant="ghost" onClick={onSkip}>
                 {skipLabel}
@@ -408,7 +451,7 @@ export function BlackboardConnect({
         </div>
       )}
 
-      {!viaBookmark && (phase.name === 'start' || phase.name === 'error') && (
+      {!viaBookmark && startish && advanced && (
         <>
           <label className="field">
             <span className="field-label">Blackboard address</span>
@@ -424,7 +467,7 @@ export function BlackboardConnect({
             </p>
           )}
           <div className="tx-actions">
-            {onSkip && (
+            {onSkip && !website && (
               <Button variant="ghost" onClick={onSkip}>
                 {skipLabel}
               </Button>
@@ -434,6 +477,32 @@ export function BlackboardConnect({
             </Button>
           </div>
         </>
+      )}
+
+      {website && startish && onSkip && (
+        <div className="tx-actions">
+          <Button variant="ghost" onClick={onSkip}>
+            {skipLabel}
+          </Button>
+        </div>
+      )}
+
+      {phase.name === 'calendar-done' && (
+        <div className="bb-done" data-testid="cal-done">
+          <div className="bb-panel is-success">
+            <CheckCircle2 size={22} />
+            <div>
+              <strong>Blackboard calendar connected</strong>
+              <p className="muted small">{describeCalendar(phase.summary) || 'Connected — nothing coming up yet.'}</p>
+              <p className="muted small">It updates by itself each time you open Student Dashboard.</p>
+            </div>
+          </div>
+          <div className="tx-actions">
+            <Button variant="primary" onClick={() => onDone(null)} data-testid="cal-continue">
+              Continue
+            </Button>
+          </div>
+        </div>
       )}
 
       {phase.name === 'checking' && (

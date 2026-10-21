@@ -56,8 +56,13 @@ keep RLS strict, the EU region, and the in-app "Delete my account".
   works where those hosts are reachable.
 - kamil-cloud/student-dashboard-web (private) is the earlier copy with the full history; work here.
 - Old site https://student-dashboard-web.netlify.app (local-only data) is no longer deployed.
+- Classmates found the bookmark confusing (2026-10-21): the main way to connect Blackboard is now
+  the calendar link (Calendar › Calendar settings › Share calendar → paste; api/calendar.js reads
+  it; src/integrations/blackboard/calendarFeed.ts merges it). The bookmark is folded under
+  "Also import your grades, professors and rooms (advanced)". Not yet tried with a real IE link:
+  the fake feed (tests/fixtures/fake-blackboard.mjs) mirrors IE's calendar titles.
 - The user does NOT want a browser extension in the flow ("ça complique"). Blackboard sync on any
-  browser goes through the "Sync Student Dashboard" bookmarklet (src/integrations/blackboard/relay.ts
+  browser can also go through the "Sync Student Dashboard" bookmarklet (src/integrations/blackboard/relay.ts
   + src/platform/relay.ts): GET-only proxy for /learn/api/public/ in the student's Blackboard tab,
   answers only to the site's origin; it opens `/app#/bb-sync`. Syllabus weights cannot be read
   that way (entered by hand).
