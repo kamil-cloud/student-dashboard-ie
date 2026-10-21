@@ -47,7 +47,14 @@ keep RLS strict, the EU region, and the in-app "Delete my account".
 - Website: `/` landing, `/signup`, `/login`, `/app` (the dashboard; its screens use `#/…`).
   Data = one `dashboards` row per user (JSON + revision for cross-device safety) and `backups`
   (supabase/schema.sql, RLS on). The extension build keeps its local IndexedDB storage.
-- Old site https://student-dashboard-web.netlify.app (local-only data) is no longer deployed from here.
+- Live (2026-10-21, checked by the user with the brief's Step 7 list: all 8 pass):
+  https://student-dashboard-ie.vercel.app — Vercel project `student-dashboard-ie` (Hobby), deploys
+  every push to `main` of this public repo (kamil-cloud/student-dashboard-ie). Supabase project
+  `bnffqkghdyfuwhxcicyh` (West EU, Ireland), schema.sql applied, "Confirm email" off, Site URL set.
+  The cloud session's network blocks *.supabase.co and *.vercel.app, so `npm run live-check` only
+  works where those hosts are reachable.
+- kamil-cloud/student-dashboard-web (private) is the earlier copy with the full history; work here.
+- Old site https://student-dashboard-web.netlify.app (local-only data) is no longer deployed.
 - The user does NOT want a browser extension in the flow ("ça complique"). Blackboard sync on any
   browser goes through the "Sync Student Dashboard" bookmarklet (src/integrations/blackboard/relay.ts
   + src/platform/relay.ts): GET-only proxy for /learn/api/public/ in the student's Blackboard tab,
