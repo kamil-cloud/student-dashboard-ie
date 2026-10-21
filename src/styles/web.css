@@ -1539,3 +1539,17 @@ a.btn {
     justify-content: center;
   }
 }
+
+/* "Log out" on full-page screens of a signed-in student (setup wizard, loading, errors). */
+.page-logout {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 70;
+}
+.page-logout + .wz {
+  padding-top: 60px;
+}
+.page-logout + .load-screen {
+  padding-top: 60px;
+}

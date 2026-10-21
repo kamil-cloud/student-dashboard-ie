@@ -151,7 +151,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         const summary = apply(snapshot);
         // The calendar link may hold the same deadlines: let it drop its copies now.
         if (calendar) window.setTimeout(() => void syncCalendar({ quiet: true }), 0);
-        void clearInbox().catch(() => {});
+        if (IS_EXTENSION) void clearInbox().catch(() => {});
         const text = describeSummary(summary);
         if (viaBookmark) tellRelay(`✓ Student Dashboard synced${text ? `: ${text}` : ' — everything is up to date'}. You can close this tab.`);
         if (!opts.quiet) {

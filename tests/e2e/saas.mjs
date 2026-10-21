@@ -75,6 +75,15 @@ async function run(engine, site, db) {
       assert.ok(await noSideScroll(phone), 'no horizontal scroll');
       await phone.screenshot({ path: path.join(WORK, `${engine}-landing-phone.png`), fullPage: true });
     });
+    await step('sign-up and login pages on a phone: readable, nothing scrolls sideways', phone, async () => {
+      for (const p of ['signup', 'login']) {
+        await phone.goto(`${site.url}/${p}`);
+        await phone.getByTestId(`${p}-submit`).waitFor();
+        assert.ok(await noSideScroll(phone), `/${p}: no horizontal scroll`);
+        const box = await phone.getByTestId(`${p}-submit`).boundingBox();
+        assert.ok(box && box.y + box.height <= 844, `/${p}: the button is on screen`);
+      }
+    });
     await step('the sign-up button leads to /signup', page, async () => {
       await page.getByRole('link', { name: /sign up/i }).click();
       await page.waitForURL(/\/signup$/);
@@ -116,6 +125,7 @@ async function run(engine, site, db) {
       await page.setViewportSize({ width: 1366, height: 600 });
       await page.goto(`${site.url}/app#/setup`);
       await page.getByTestId('welcome').waitFor();
+      assert.ok(await page.getByTestId('logout').isVisible(), 'logout visible on the setup screen too');
       const start = page.getByTestId('wz-start');
       await page.mouse.move(683, 300);
       for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 400);
@@ -137,6 +147,22 @@ async function run(engine, site, db) {
       await page.waitForURL((u) => new URL(u).pathname === '/');
       const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
       assert.ok(!stored.includes(TEXT), 'no user data left in localStorage');
+      const local = await page.evaluate(
+        () =>
+          new Promise((resolve) => {
+            const req = indexedDB.open('student-dashboard');
+            req.onupgradeneeded = () => resolve('none'); // the website never created it
+            req.onsuccess = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains('kv')) return resolve('none');
+              const get = db.transaction('kv').objectStore('kv').get('data');
+              get.onsuccess = () => resolve(get.result ? 'data' : 'none');
+              get.onerror = () => resolve('none');
+            };
+            req.onerror = () => resolve('none');
+          }),
+      );
+      assert.equal(local, 'none', 'no dashboard kept in the browser (IndexedDB)');
       await page.goto(`${site.url}/app`);
       await page.waitForURL(/\/login$/);
     });

@@ -10,7 +10,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   Loader2,
-  LogOut,
   Moon,
   NotebookPen,
   Plus,
@@ -46,10 +45,10 @@ import { Welcome, wizardStart } from './pages/Welcome';
 import { LoginPage, SignupPage } from './pages/Auth';
 import { Landing } from './pages/Landing';
 import { goTo, usePage } from './lib/paths';
-import { resetCloudState } from './lib/cloudStorage';
 import { IS_EXTENSION } from './platform/env';
 import { OPENED_BY_BOOKMARK } from './platform/relay';
-import { SUPABASE_CONFIGURED, supabase, useSession } from './platform/supabase';
+import { SUPABASE_CONFIGURED, useSession } from './platform/supabase';
+import { LogoutButton, logOut } from './components/Logout';
 
 type NavName = 'dashboard' | 'calendar' | 'assignments' | 'courses' | 'grades' | 'analytics' | 'settings';
 
@@ -253,7 +252,7 @@ function Shell() {
         <div className="main-drag">
           <div className="main-tools">
             <NotificationBell />
-            {!IS_EXTENSION && <LogoutButton />}
+            {!IS_EXTENSION && <DashboardLogout />}
           </div>
         </div>
         <ErrorBoundary
@@ -273,36 +272,10 @@ function Shell() {
   );
 }
 
-async function logOut(beforehand?: () => Promise<void>) {
-  try {
-    await beforehand?.();
-  } finally {
-    await supabase().auth.signOut().catch(() => {});
-    resetCloudState();
-    goTo('landing', { replace: true, hash: '' });
-  }
-}
-
-function LogoutButton() {
+/** The dashboard's "Log out", saving pending changes first. */
+function DashboardLogout() {
   const { saveNow } = useStore();
-  const [busy, setBusy] = useState(false);
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="logout-btn"
-      icon={busy ? <Loader2 size={15} className="spin" /> : <LogOut size={15} />}
-      disabled={busy}
-      onClick={() => {
-        setBusy(true);
-        void logOut(saveNow);
-      }}
-      title="Log out"
-      data-testid="logout"
-    >
-      <span className="nav-label">Log out</span>
-    </Button>
-  );
+  return <LogoutButton saveNow={saveNow} />;
 }
 
 /**
@@ -321,7 +294,16 @@ function Gate() {
     if (route.name === 'setup' && onboarded) navigate({ name: 'dashboard' }, { replace: true });
   }, [route.name, onboarded]);
   if (!onboarded && (start === 'blackboard' || route.name === 'setup' || (IS_EXTENSION && start === 'welcome'))) {
-    return <Welcome startAt={start === 'blackboard' ? 'blackboard' : 'welcome'} />;
+    return (
+      <>
+        {!IS_EXTENSION && (
+          <div className="page-logout">
+            <DashboardLogout />
+          </div>
+        )}
+        <Welcome startAt={start === 'blackboard' ? 'blackboard' : 'welcome'} />
+      </>
+    );
   }
   return <Shell />;
 }
@@ -395,7 +377,18 @@ function DashboardApp() {
   return (
     <ToastProvider>
       <ConfirmProvider>
-        <DataProvider fallback={(state, actions) => <LoadScreen state={state} actions={actions} />}>
+        <DataProvider
+          fallback={(state, actions) => (
+            <>
+              {!IS_EXTENSION && (
+                <div className="page-logout">
+                  <LogoutButton />
+                </div>
+              )}
+              <LoadScreen state={state} actions={actions} />
+            </>
+          )}
+        >
           <BackupProvider>
             <SyncProvider>
               <EditorsProvider>
