@@ -14,8 +14,10 @@ export async function readPdfText(data: ArrayBuffer): Promise<PdfTextItem[]> {
   const head = new Uint8Array(data.slice(0, 5));
   if (String.fromCharCode(...head) !== '%PDF-') throw new PdfReadError('That file is not a PDF.');
 
-  const pdfjs = await import('pdfjs-dist');
-  const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+  // The "legacy" build: the modern one needs JavaScript features Safari does not have yet
+  // (e.g. Promise.try, Map.prototype.getOrInsertComputed), and failed there.
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const workerUrl = (await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const task = pdfjs.getDocument({ data: new Uint8Array(data), verbosity: 0 });

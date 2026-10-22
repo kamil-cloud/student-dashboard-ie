@@ -38,10 +38,13 @@ export function TranscriptImport({ onDone, onSkip, skipLabel = 'Skip for now' }:
       const items = await readPdfText(await file.arrayBuffer());
       setPhase({ name: 'preview', file: file.name, result: parseIeTranscript(items) });
     } catch (err) {
+      // Unexpected errors keep a short technical note, so a student can report what happened.
+      const detail = err instanceof Error ? `${err.name}: ${err.message}`.slice(0, 160) : String(err).slice(0, 160);
       const message =
         err instanceof PdfReadError || err instanceof TranscriptError
           ? err.message
-          : 'Something went wrong while reading this file. Make sure it is the PDF transcript downloaded from your university.';
+          : `Something went wrong while reading this file. Make sure it is the PDF transcript downloaded from your university. (Details: ${detail})`;
+      if (!(err instanceof PdfReadError || err instanceof TranscriptError)) console.error('[transcript]', err);
       setPhase({ name: 'error', message });
     }
   };

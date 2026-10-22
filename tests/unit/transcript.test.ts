@@ -6,6 +6,7 @@ import { applyTranscript, semesterKey } from '../../src/integrations/transcript/
 import { abbreviate, mergeFields, nameSimilarity } from '../../src/integrations/common';
 import { emptyData } from '../../src/lib/defaults';
 import { computeGpa, ectsSummary, formatGpa } from '../../src/lib/grades';
+import source from '../../src/integrations/transcript/pdf.ts?raw';
 
 async function pdfItems(bytes: Uint8Array): Promise<PdfTextItem[]> {
   const doc = await getDocument({ data: bytes, verbosity: 0 }).promise;
@@ -153,5 +154,13 @@ describe('import helpers', () => {
     expect(r2.changes).toEqual({ dueDate: '2026-10-15' });
     expect(r2.overridden).toEqual(['dueDate']);
     expect(r2.synced.dueDate).toBe('2026-10-15');
+  });
+});
+
+describe('PDF reading in every browser', () => {
+  it('uses pdf.js’s legacy build (the modern one needs Promise.try & co., missing in Safari)', () => {
+    expect(source).toMatch(/import\('pdfjs-dist\/legacy\/build\/pdf\.mjs'\)/);
+    expect(source).toMatch(/pdfjs-dist\/legacy\/build\/pdf\.worker\.min\.mjs\?url/);
+    expect(source).not.toMatch(/import\('pdfjs-dist'\)/);
   });
 });
