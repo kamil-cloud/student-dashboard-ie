@@ -164,3 +164,23 @@ describe('PDF reading in every browser', () => {
     expect(source).not.toMatch(/import\('pdfjs-dist'\)/);
   });
 });
+
+describe('PDF text in Safari (no async iteration on ReadableStream)', () => {
+  it('reads the transcript once the stream iterator is added', async () => {
+    const proto = ReadableStream.prototype as unknown as Record<symbol, unknown>;
+    const original = proto[Symbol.asyncIterator];
+    delete proto[Symbol.asyncIterator];
+    try {
+      const doc = await getDocument({ data: await makeIeTranscriptPdf(), verbosity: 0 }).promise;
+      const page = await doc.getPage(1);
+      // As in Safari: pdf.js's own getTextContent fails…
+      await expect(page.getTextContent()).rejects.toThrow(TypeError);
+      // …and works with the iterator the app adds.
+      const { ensureStreamIteration } = await import('../../src/integrations/transcript/pdf');
+      ensureStreamIteration();
+      expect((await page.getTextContent()).items.length).toBeGreaterThan(10);
+    } finally {
+      Object.defineProperty(proto, Symbol.asyncIterator, { configurable: true, writable: true, value: original });
+    }
+  });
+});

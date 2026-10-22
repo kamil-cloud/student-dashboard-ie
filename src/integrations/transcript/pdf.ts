@@ -9,6 +9,32 @@ export class PdfReadError extends Error {}
 const MAX_PDF_BYTES = 15 * 1024 * 1024;
 const MAX_PAGES = 30;
 
+/**
+ * pdf.js reads text with `for await (… of readableStream)`, which Safari does not support yet
+ * (no async iterator on ReadableStream): add it, reading the stream the classic way.
+ */
+export function ensureStreamIteration(): void {
+  if (typeof ReadableStream === 'undefined') return;
+  const proto = ReadableStream.prototype as unknown as Record<symbol, unknown>;
+  if (typeof proto[Symbol.asyncIterator] === 'function') return;
+  Object.defineProperty(proto, Symbol.asyncIterator, {
+    configurable: true,
+    writable: true,
+    value: async function* streamValues(this: ReadableStream) {
+      const reader = this.getReader();
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  });
+}
+
 export async function readPdfText(data: ArrayBuffer): Promise<PdfTextItem[]> {
   if (data.byteLength > MAX_PDF_BYTES) throw new PdfReadError('That file is too large for a transcript (over 15 MB).');
   const head = new Uint8Array(data.slice(0, 5));
@@ -16,6 +42,7 @@ export async function readPdfText(data: ArrayBuffer): Promise<PdfTextItem[]> {
 
   // The "legacy" build: the modern one needs JavaScript features Safari does not have yet
   // (e.g. Promise.try, Map.prototype.getOrInsertComputed), and failed there.
+  ensureStreamIteration();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const workerUrl = (await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
