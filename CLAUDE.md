@@ -65,6 +65,10 @@ keep RLS strict, the EU region, and the in-app "Delete my account".
   university (asked, never assumed), IE transcript, Blackboard calendar link, then optionally the
   bookmark. It must stay non-blocking (contract: no mandatory onboarding; no pop-up on load; the
   bot types in core-input right away); "I'll do it later" hides it.
+- Safari (Mac + iPhone) transcript import works since 2026-10-22 (confirmed by the user): pdf.js
+  must stay on its legacy build, and src/integrations/transcript/pdf.ts adds async iteration to
+  ReadableStream (Safari lacks it; pdf.js's getTextContent needs it). WebKitGTK + WebKitWebDriver
+  (apt: webkit2gtk-driver, xvfb) can test Safari's engine where Playwright's WebKit can't download.
 - The user does NOT want a browser extension in the flow ("ça complique"). Blackboard sync on any
   browser can also go through the "Sync Student Dashboard" bookmarklet (src/integrations/blackboard/relay.ts
   + src/platform/relay.ts): GET-only proxy for /learn/api/public/ in the student's Blackboard tab,
